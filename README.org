@@ -1,0 +1,39 @@
+* Ivy-yarn
+
+Run yarn commands in vterm with ivy completions.
+
+** Requirements
+
+- Emacs (>= 26.1)
+- [[https://github.com/abo-abo/swiper][ivy]]
+- [[https://github.com/akermu/emacs-libvterm][vterm]]
+- json
+
+** Installation
+
+*** With straight-use-package
+
+Put the following in your init file:
+
+#+begin_src elisp
+(use-package ivy-yarn
+  :straight (ivy-yarn
+             :type git
+             :host github
+             :repo "KarimAziev/ivy-yarn"))
+#+end_src
+
+*** Manually
+
+Or download repository and add it to your ~load-path~.
+
+#+begin_src elisp
+
+(add-to-list 'load-path "/path/to/ivy-yarn/")
+
+(require 'ivy-yarn)
+#+end_src
+
+
+** Usage
+ Run in your project directory =M-x ivy-yarn RET=.
