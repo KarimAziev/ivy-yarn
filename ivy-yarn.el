@@ -84,16 +84,15 @@ JSON-TYPE must be one of `alist', `plist', or `hash-table'."
     (error (message "Could't read %s as json."
                     file))))
 
-(defun ivy-yarn-ivy-read-multy (&optional collection)
+(defun ivy-yarn-ivy-read-multy (prompt collection)
 	"Read COLLECTION and return list of marked candidates or selected candidate."
   (interactive)
   (let ((marked)
         (item))
-    (setq item (ivy-read ""
+    (setq item (ivy-read prompt
                          collection
                          :caller 'ivy-yarn-ivy-read-multy
                          :action (lambda (it) it)
-                         :unwind 'elisp-scan-cleanup-overlay
                          :multi-action (lambda (cands) (setq marked cands))))
     (or marked (list item))))
 
@@ -383,6 +382,7 @@ INITIAL-INPUT can be given as the initial minibuffer input."
   (let* ((dependency (ivy-yarn-add-read-dependency))
          (flags (string-join
                  (ivy-yarn-ivy-read-multy
+                  "Options:\s"
                   (seq-uniq
                    (append
                     (list "none" "--dev" "--peer" "file:")
@@ -463,7 +463,7 @@ INITIAL-INPUT can be given as the initial minibuffer input."
         ("why" . ivy-yarn-get-current-dependencies)))
 
 (defun ivy-yarn-get-choices ()
-	"Get choices."
+	"Return alist of commands, and scripts with handlers."
   (let ((def-commands
          (mapcar
           (lambda (it) `(,it .
@@ -477,7 +477,8 @@ INITIAL-INPUT can be given as the initial minibuffer input."
                                     "yarn" ,it "--help")
                                    "\s"))))
                             (setq val
-                                  (ivy-yarn-ivy-read-multy choices))
+                                  (ivy-yarn-ivy-read-multy
+                                   (format "yarn %s" it) choices))
                             (if (listp val)
                                 (string-join val "\s")
                               val)))))
