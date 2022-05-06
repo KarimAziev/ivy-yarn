@@ -84,14 +84,14 @@ JSON-TYPE must be one of `alist', `plist', or `hash-table'."
     (error (message "Could't read %s as json."
                     file))))
 
-(defun ivy-yarn-ivy-read-multy (prompt collection)
+(defun ivy-yarn-read-multy (prompt collection)
 	"Read COLLECTION and return list of marked candidates or selected candidate."
   (interactive)
   (let ((marked)
         (item))
     (setq item (ivy-read prompt
                          collection
-                         :caller 'ivy-yarn-ivy-read-multy
+                         :caller 'ivy-yarn-read-multy
                          :action (lambda (it) it)
                          :multi-action (lambda (cands) (setq marked cands))))
     (or marked (list item))))
@@ -182,7 +182,19 @@ INITIAL-INPUT can be given as the initial minibuffer input."
               (substring it len))
             (ivy-yarn-list-symlinked-dirs-recursively directory))))
 
-(defun ivy-yarn-find-links ()
+(defun ivy-yarn-project-linked-dependencies ()
+  "Return list of linked packages in the current project.
+Only those packages includes that listed in package.json. "
+  (let ((node-modules (ivy-yarn-get-node-modules-path))
+        (dependencies (ivy-yarn-get-current-dependencies))
+        (links))
+    (dolist (package-name dependencies)
+      (when-let ((dir (ivy-yarn-expand-when-exists package-name node-modules)))
+        (when (file-symlink-p dir)
+          (push package-name links))))
+    links))
+
+(defun ivy-yarn-find-global-links ()
   "Return list of linked packages in `ivy-yarn-global-config-directory' directory."
   (when-let ((links-dir (when ivy-yarn-global-config-directory
                           (ivy-yarn-expand-when-exists
@@ -207,9 +219,17 @@ Return full path of containing directory or nil."
 
 (defun ivy-yarn-unlink ()
 	"Unlink and reinstall linked package in current project."
-  (when-let ((dir (ivy-yarn-get-node-modules-path)))
-    (concat (completing-read "Unlink\s" (ivy-yarn-links-in-dir dir))
-            " && yarn install --force")))
+  (let ((current-project-name (ivy-yarn-read-from-package-json 'name))
+        (global-links (ivy-yarn-find-global-links))
+        (linked-packages (ivy-yarn-project-linked-dependencies))
+        (choice))
+    (setq choice (completing-read "Unlink:\s"
+                                  (if (member current-project-name global-links)
+                                      (nconc (list "self") linked-packages)
+                                    linked-packages)))
+    (pcase choice
+      ("self" "")
+      (_ " && yarn install --force"))))
 
 (defun ivy-yarn-get-package-json-path ()
 	"Look up directory hierarchy for directory containing package.json.
@@ -217,6 +237,12 @@ Return absolute path to package.json or nil."
   (when-let ((project-root (ivy-yarn-get-project-root)))
     (expand-file-name "package.json"
                       project-root)))
+
+(defun ivy-yarn-read-from-package-json (key)
+	"Return value of KEY from package.json."
+  (let* ((package-json-path (ivy-yarn-get-package-json-path))
+         (package-json (ivy-yarn-read-json package-json-path 'alist)))
+    (alist-get key package-json)))
 
 (defun ivy-yarn-get-current-scripts ()
 	"Get current project scripts from package.json."
@@ -381,7 +407,7 @@ INITIAL-INPUT can be given as the initial minibuffer input."
   (interactive)
   (let* ((dependency (ivy-yarn-add-read-dependency))
          (flags (string-join
-                 (ivy-yarn-ivy-read-multy
+                 (ivy-yarn-read-multy
                   "Options:\s"
                   (seq-uniq
                    (append
@@ -444,7 +470,7 @@ INITIAL-INPUT can be given as the initial minibuffer input."
                      ("remove" . ivy-yarn-get-current-dependencies)
                      ("upgrade" . ivy-yarn-read-installed-package)))
         ("run" . ivy-yarn-get-current-scripts)
-        ("link" . ivy-yarn-find-links)
+        ("link" . ivy-yarn-find-global-links)
         ("unlink" . ivy-yarn-unlink)
         ("remove" . ivy-yarn-get-current-dependencies)
         ("upgrade" . ivy-yarn-read-installed-package)
@@ -477,7 +503,7 @@ INITIAL-INPUT can be given as the initial minibuffer input."
                                     "yarn" ,it "--help")
                                    "\s"))))
                             (setq val
-                                  (ivy-yarn-ivy-read-multy
+                                  (ivy-yarn-read-multy
                                    (format "yarn %s" it) choices))
                             (if (listp val)
                                 (string-join val "\s")
@@ -685,7 +711,7 @@ PLIST is additional props passed to `ivy-read'."
 (ivy-configure 'ivy-yarn-complete-alist
   :display-transformer-fn 'ivy-yarn-complete-display-fn)
 
-(ivy-configure 'ivy-yarn-ivy-read-multy
+(ivy-configure 'ivy-yarn-read-multy
   :display-transformer-fn 'ivy-yarn-complete-display-fn)
 
 (ivy-configure 'ivy-yarn-read-installed-package
