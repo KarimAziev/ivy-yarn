@@ -53,6 +53,11 @@
   :type 'directory
   :group 'ivy-yarn)
 
+(defcustom ivy-yarn-use-nvm nil
+  "Whether to prepend nvm-use to command if .nvmrc exists."
+  :type 'boolean
+  :group 'ivy-yarn)
+
 (defvar ivy-yarn-json-hash (make-hash-table :test 'equal))
 
 (defun ivy-yarn-read-json (file &optional json-type)
@@ -504,7 +509,7 @@ INITIAL-INPUT can be given as the initial minibuffer input."
                                    "\s"))))
                             (setq val
                                   (ivy-yarn-read-multy
-                                   (format "yarn %s" it) choices))
+                                   (format "yarn %s" ,it) choices))
                             (if (listp val)
                                 (string-join val "\s")
                               val)))))
@@ -603,39 +608,6 @@ PLIST is additional props passed to `ivy-read'."
       (setq result
             (reverse result)))))
 
-(defun ivy-yarn-normalize-result (strings)
-	"Normalize STRINGS by trimming and prepending prefix to them."
-  (unless (listp strings)
-    (setq strings (split-string strings t)))
-  (let ((command (string-trim
-                  (string-join (seq-remove 'string-blank-p
-                                           (mapcar
-                                            'string-trim strings))
-                               "\s"))))
-    (unless (string-match-p "^\\_<\\(yarn\\|npm\\|npx\\|nvm\\)\\_>" command)
-      (setq command
-            (concat "yarn " command)))
-    (string-trim (ivy-yarn-ensure-nvm-use command))))
-
-(defun ivy-yarn-expand-when-exists (filename &optional directory)
-	"Expand FILENAME to DIRECTORY and return result if exists."
-  (when-let ((file (expand-file-name filename directory)))
-    (when (file-exists-p file)
-      file)))
-
-(defun ivy-yarn-nvm-path ()
-	"Return path to NVM_DIR if exists."
-  (when-let* ((nvm-dir (or (getenv "NVM_DIR")
-                           (when (file-exists-p "~/.nvm/")
-                             "~/.nvm/")))
-              (file (expand-file-name "nvm.sh" nvm-dir)))
-    (when (file-exists-p file)
-      file)))
-
-(defun ivy-yarn-nvm-installed-p ()
-	"Return t if NVM_DIR exists."
-  (not (null (ivy-yarn-nvm-path))))
-
 (defun ivy-yarn-nvm-node-path (&optional project)
   "If PROJECT can use nvm, prepend to COMMAND nvm use."
   (when-let ((source (and (ivy-yarn-expand-when-exists
@@ -656,11 +628,48 @@ PLIST is additional props passed to `ivy-read'."
 
 (defun ivy-yarn-ensure-nvm-use (command &optional project)
   "If PROJECT can use nvm, prepend to COMMAND nvm use."
-  (if (and (ivy-yarn-expand-when-exists ".nvmrc" (or project
+  (if (and
+       ivy-yarn-use-nvm
+       (ivy-yarn-expand-when-exists ".nvmrc" (or project
                                                  (ivy-yarn-get-project-root)))
-           (ivy-yarn-nvm-installed-p))
-      (concat "nvm use && yarn && " command)
+       (ivy-yarn-nvm-installed-p))
+      (concat "nvm use && " command)
     command))
+
+(defun ivy-yarn-normalize-result (strings)
+	"Normalize STRINGS by trimming and prepending prefix to them."
+  (unless (listp strings)
+    (setq strings (split-string strings t)))
+  (let* ((command (string-trim
+                   (string-join (seq-remove 'string-blank-p
+                                            (mapcar
+                                             'string-trim strings))
+                                "\s"))))
+    (string-trim (ivy-yarn-ensure-nvm-use
+                  (if (member
+                       (car (split-string command))
+                       ivy-yarn-all-commands)
+                      (concat "yarn " command)
+                    (concat "yarn && yarn " command))))))
+
+(defun ivy-yarn-expand-when-exists (filename &optional directory)
+	"Expand FILENAME to DIRECTORY and return result if exists."
+  (when-let ((file (expand-file-name filename directory)))
+    (when (file-exists-p file)
+      file)))
+
+(defun ivy-yarn-nvm-path ()
+	"Return path to NVM_DIR if exists."
+  (when-let* ((nvm-dir (or (getenv "NVM_DIR")
+                           (when (file-exists-p "~/.nvm/")
+                             "~/.nvm/")))
+              (file (expand-file-name "nvm.sh" nvm-dir)))
+    (when (file-exists-p file)
+      file)))
+
+(defun ivy-yarn-nvm-installed-p ()
+	"Return t if NVM_DIR exists."
+  (not (null (ivy-yarn-nvm-path))))
 
 (defun ivy-yarn-run-in-vterm (project command)
 	"Run COMMAND in PROJECT in vterm."
@@ -674,6 +683,16 @@ PLIST is additional props passed to `ivy-read'."
       (run-at-time
        0.5 nil 'vterm-send-string command)
       (run-at-time 1 nil 'vterm-send-return))))
+
+(defun ivy-yarn ()
+	"Read and execute yarn command or project script in vterm."
+  (interactive)
+  (when-let* ((package-json (ivy-yarn-get-package-json-path))
+              (project (file-name-directory package-json))
+              (parts (ivy-yarn-complete-alist
+                      (ivy-yarn-get-choices)))
+              (command (read-string "Run\s" (ivy-yarn-normalize-result parts))))
+    (ivy-yarn-run-in-vterm project command)))
 
 (defun ivy-yarn-complete-display-fn (item)
 	"Transform ITEM for displaying while `ivy-read'."
@@ -697,16 +716,6 @@ PLIST is additional props passed to `ivy-read'."
                         'face
                         'font-lock-builtin-face)))
           item))))
-
-(defun ivy-yarn ()
-	"Read and execute yarn command or project script in vterm."
-  (interactive)
-  (when-let* ((package-json (ivy-yarn-get-package-json-path))
-              (project (file-name-directory package-json))
-              (parts (ivy-yarn-complete-alist
-                      (ivy-yarn-get-choices)))
-              (command (read-string "Run\s" (ivy-yarn-normalize-result parts))))
-    (ivy-yarn-run-in-vterm project command)))
 
 (ivy-configure 'ivy-yarn-complete-alist
   :display-transformer-fn 'ivy-yarn-complete-display-fn)
