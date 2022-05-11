@@ -2,6 +2,8 @@
 
 Execute yarn commands with ivy completions.
 
+[[./ivy-yarn-demo.gif]]
+
 ** Requirements
 
 - Emacs (>= 26.1)
