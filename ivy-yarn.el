@@ -24,25 +24,44 @@
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ;;; Commentary:
 
-;; Run yarn commands in vterm with ivy completions.
+;; Run yarn commands with ivy completions.
 
 ;; Usage
 
 ;; (require 'ivy-yarn)
 
-;; M-x ivy-yarn
+;; And then run in your project:
+;;   M-x `ivy-yarn'
+
+;; If project directory contains .nvmrc file,
+;; a variable `ivy-yarn-use-nvm' is non-nil and nvm installed,
+;; execute nvm-use before running command.
+
+;; If vterm is installed and the value of variable
+;; `ivy-yarn-use-vterm' is non-nil, run command in `vterm',
+;; otherwise with `async-shell-command'.
+
 ;;
 ;; Customization
 
 ;; `ivy-yarn-global-config-directory'
-;;      The path to the node and yarn directory with links.
+;;    The path to the node and yarn directory with links.
+
+;; `ivy-yarn-use-nvm'
+;;     Whether to execute nvm-use if .nvmrc exists and nvm installed.
+
+;; `ivy-yarn-use-vterm'
+;;     Whether to run commands in `vterm', if installed.
 
 ;;; Code:
 
 (require 'json)
 (require 'ivy)
 (require 'counsel)
-(require 'vterm)
+
+(declare-function vterm "ext:vterm")
+(declare-function vterm--invalidate "ext:vterm")
+(declare-function vterm-send-string "ext:vterm")
 
 (defgroup ivy-yarn nil
   "Run yarn in Emacs with `ivy-read'."
@@ -58,12 +77,16 @@
   :type 'boolean
   :group 'ivy-yarn)
 
+(defcustom ivy-yarn-use-vterm t
+  "Whether to execute commands in vterm, if installed."
+  :type 'boolean
+  :group 'ivy-yarn)
+
 (defvar ivy-yarn-json-hash (make-hash-table :test 'equal))
 
 (defun ivy-yarn-read-json (file &optional json-type)
   "Read the JSON object in FILE, return object converted to JSON-TYPE.
 JSON-TYPE must be one of `alist', `plist', or `hash-table'."
-  (require 'js-imports)
   (condition-case nil
       (let* ((json-object-type (or json-type 'plist))
              (cache (gethash (format "%s:%s" file json-object-type)
@@ -628,12 +651,13 @@ PLIST is additional props passed to `ivy-read'."
 
 (defun ivy-yarn-ensure-nvm-use (command &optional project)
   "If PROJECT can use nvm, prepend to COMMAND nvm use."
-  (if (and
-       ivy-yarn-use-nvm
-       (ivy-yarn-expand-when-exists ".nvmrc" (or project
-                                                 (ivy-yarn-get-project-root)))
-       (ivy-yarn-nvm-installed-p))
-      (concat "nvm use && " command)
+  (if-let ((nvm-path (and
+                      ivy-yarn-use-nvm
+                      (ivy-yarn-expand-when-exists
+                       ".nvmrc" (or project
+                                    (ivy-yarn-get-project-root)))
+                      (ivy-yarn-nvm-path))))
+      (concat "source " nvm-path " && nvm use && " command)
     command))
 
 (defun ivy-yarn-normalize-result (strings)
@@ -673,7 +697,8 @@ PLIST is additional props passed to `ivy-read'."
 
 (defun ivy-yarn-run-in-vterm (project command)
 	"Run COMMAND in PROJECT in vterm."
-  (let ((buffer (format "*%s*" (concat "vterm-ivy-yarn-" project))))
+  (let ((buffer (format "*%s*" (concat "vterm-ivy-yarn-"
+                                       (abbreviate-file-name project)))))
     (when (buffer-live-p (get-buffer buffer))
       (switch-to-buffer (get-buffer buffer))
       (vterm--invalidate)
@@ -684,15 +709,32 @@ PLIST is additional props passed to `ivy-read'."
        0.5 nil 'vterm-send-string command)
       (run-at-time 1 nil 'vterm-send-return))))
 
+(defun ivy-yarn-run-async-shell-command (project command)
+	"Run COMMAND in PROJECT with `async-shell-command'."
+  (let ((buffer (format "*%s*" (concat "ivy-yarn-"
+                                       (abbreviate-file-name project))))
+        (default-directory project))
+    (async-shell-command command buffer buffer)))
+
 (defun ivy-yarn ()
-	"Read and execute yarn command or project script in vterm."
+	"Read and execute yarn command or project script.
+
+If project directory contains .nvmrc file,
+`ivy-yarn-use-nvm' is non-nil and nvm installed,
+execute nvm-use before running command.
+
+If vterm is installed and `ivy-yarn-use-vterm' is non-nil,
+run command in `vterm', otherwise with `async-shell-command'."
   (interactive)
   (when-let* ((package-json (ivy-yarn-get-package-json-path))
               (project (file-name-directory package-json))
               (parts (ivy-yarn-complete-alist
                       (ivy-yarn-get-choices)))
               (command (read-string "Run\s" (ivy-yarn-normalize-result parts))))
-    (ivy-yarn-run-in-vterm project command)))
+    (if (and ivy-yarn-use-vterm
+             (require 'vterm nil t))
+        (ivy-yarn-run-in-vterm project command)
+      (ivy-yarn-run-async-shell-command project command))))
 
 (defun ivy-yarn-complete-display-fn (item)
 	"Transform ITEM for displaying while `ivy-read'."

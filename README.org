@@ -1,13 +1,13 @@
 * Ivy-yarn
 
-Run yarn commands in vterm with ivy completions.
+Execute yarn commands with ivy completions.
 
 ** Requirements
 
 - Emacs (>= 26.1)
 - [[https://github.com/abo-abo/swiper][ivy]]
-- [[https://github.com/akermu/emacs-libvterm][vterm]]
 - json
+- [[https://github.com/akermu/emacs-libvterm][vterm]] (optionally)
 
 ** Installation
 
@@ -36,4 +36,12 @@ Or download repository and add it to your ~load-path~.
 
 
 ** Usage
- Run in your project directory =M-x ivy-yarn RET=.
+Run in your project directory =M-x ivy-yarn RET=.
+
+If project directory contains .nvmrc file,
+a variable ~ivy-yarn-use-nvm~ is non-nil and nvm installed,
+execute nvm-use before executing command.
+
+If vterm is installed and the value of variable
+~ivy-yarn-use-vterm~ is non-nil, run command in `vterm',
+ otherwise with `async-shell-command'.
