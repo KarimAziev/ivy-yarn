@@ -113,7 +113,7 @@ JSON-TYPE must be one of `alist', `plist', or `hash-table'."
                     file))))
 
 (defun ivy-yarn-read-multy (prompt collection)
-	"Read COLLECTION and return list of marked candidates or selected candidate."
+	"Read COLLECTION with PROMPT and return list with selected candidates."
   (interactive)
   (let ((marked)
         (item))
@@ -212,7 +212,7 @@ INITIAL-INPUT can be given as the initial minibuffer input."
 
 (defun ivy-yarn-project-linked-dependencies ()
   "Return list of linked packages in the current project.
-Only those packages includes that listed in package.json. "
+Only those packages includes that listed in package.json."
   (let ((node-modules (ivy-yarn-get-node-modules-path))
         (dependencies (ivy-yarn-get-current-dependencies))
         (links))
