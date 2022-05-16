@@ -272,14 +272,42 @@ Return absolute path to package.json or nil."
          (package-json (ivy-yarn-read-json package-json-path 'alist)))
     (alist-get key package-json)))
 
+(defun ivy-yarn-jest-installed-p ()
+  "Return t if jest can be run in the current project."
+  (when-let* ((node-modules (ivy-yarn-get-node-modules-path))
+              (package-json-path (ivy-yarn-get-package-json-path))
+              (package-json (ivy-yarn-read-json package-json-path 'alist))
+              (scripts (alist-get 'scripts package-json)))
+    (and (alist-get 'test scripts)
+         (not (null (member "jest" (directory-files node-modules)))))))
+
+(defun ivy-yarn-jest-current-file-cmd ()
+  "Return string with jest command for testing current file."
+  (when-let ((file (or buffer-file-name default-directory))
+             (project-root (ivy-yarn-get-project-root)))
+    (let ((path-pattern (shell-quote-argument
+                         (replace-regexp-in-string
+                          (regexp-quote project-root)
+                          ""
+                          (abbreviate-file-name file)))))
+      (ivy-yarn-add-props
+       (string-join (list
+                     "test"
+                     "--testPathPattern"
+                     path-pattern)
+                    "\s")
+       :description "Run jest on current file"))))
+
 (defun ivy-yarn-get-current-scripts ()
-	"Get current project scripts from package.json."
+	"Get current project scripts from package.json.
+Return list of strings, propertized with :description."
   (let* ((package-json-path (ivy-yarn-get-package-json-path))
          (package-json (ivy-yarn-read-json package-json-path 'alist))
          (scripts (alist-get 'scripts package-json)))
-    (mapcar (lambda (it) (ivy-yarn-add-props
-                     (format "%s" (car it))
-                     :description (format "%s:\s%s" (car it) (cdr it))))
+    (mapcar (lambda (it)
+              (ivy-yarn-add-props
+               (format "%s" (car it))
+               :description (format "%s:\s%s" (car it) (cdr it))))
             scripts)))
 
 (defun ivy-yarn-stringify (x)
@@ -311,7 +339,11 @@ X can be any object."
     (apply 'propertize string (cdr result))))
 
 (defun ivy-yarn-get-current-dependencies ()
-	"Get current project dependencies from package.json."
+	"Get current project dependencies from package.json.
+Return list of strings. Each of string propertized with props
+:type (dependencies, devDependencies, optionalDependencies
+ or peerDependencies), :version - package version,and
+:description (type and version)."
   (let* ((package-json-path (ivy-yarn-get-package-json-path))
          (package-json (ivy-yarn-read-json package-json-path 'alist))
          (all-items))
@@ -538,10 +570,12 @@ INITIAL-INPUT can be given as the initial minibuffer input."
                               val)))))
           (seq-difference
            ivy-yarn-all-commands
-           (mapcar 'car ivy-yarn-completions-commands)))))
-    (append (ivy-yarn-get-current-scripts)
-            ivy-yarn-completions-commands
-            def-commands)))
+           (mapcar 'car ivy-yarn-completions-commands))))
+        (scripts (ivy-yarn-get-current-scripts)))
+    (if (ivy-yarn-jest-installed-p)
+        (append scripts (list (ivy-yarn-jest-current-file-cmd))
+                ivy-yarn-completions-commands def-commands)
+      (append scripts ivy-yarn-completions-commands def-commands))))
 
 (defun ivy-yarn-plist-pick (keywords pl)
 	"Pick KEYWORDS from PL."
@@ -698,7 +732,10 @@ PLIST is additional props passed to `ivy-read'."
 (defun ivy-yarn-run-in-vterm (project command)
 	"Run COMMAND in PROJECT in vterm."
   (let ((buffer (format "*%s*" (concat "vterm-ivy-yarn-"
-                                       (abbreviate-file-name project)))))
+                                       (replace-regexp-in-string
+                                        "~/"
+                                        ""
+                                        (abbreviate-file-name project))))))
     (when (buffer-live-p (get-buffer buffer))
       (switch-to-buffer (get-buffer buffer))
       (vterm--invalidate)
