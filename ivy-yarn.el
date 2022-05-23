@@ -257,6 +257,7 @@ Return full path of containing directory or nil."
                                     linked-packages)))
     (pcase choice
       ("self" "")
+      ((pred stringp) (concat choice " && yarn install --force"))
       (_ " && yarn install --force"))))
 
 (defun ivy-yarn-get-package-json-path ()
@@ -435,7 +436,7 @@ ITEM can be propertized string or plist."
         (delq nil (reverse items))))))
 
 (defun ivy-yarn-add-read-dependency (&optional initial-input)
-  "Call the \"locate\" shell command.
+  "Read dependency to install.
 INITIAL-INPUT can be given as the initial minibuffer input."
   (interactive)
   (let ((result (if initial-input
