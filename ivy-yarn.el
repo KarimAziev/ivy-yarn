@@ -337,7 +337,7 @@ X can be any object."
         (when new
           (setcdr last new)
           (setq last (cdr new)))))
-    (apply 'propertize string (cdr result))))
+    (apply #'propertize string (cdr result))))
 
 (defun ivy-yarn-get-current-dependencies ()
 	"Get current project dependencies from package.json.
@@ -409,7 +409,7 @@ ITEM can be propertized string or plist."
              (format "%s@%s" package
                      (ivy-yarn-get-prop package :version)))
             results))
-    (mapconcat 'string-trim results "\s")))
+    (mapconcat #'string-trim results "\s")))
 
 (defun ivy-yarn-parse-command-args (command)
 	"Parse shell COMMAND args."
@@ -571,7 +571,7 @@ INITIAL-INPUT can be given as the initial minibuffer input."
                               val)))))
           (seq-difference
            ivy-yarn-all-commands
-           (mapcar 'car ivy-yarn-completions-commands))))
+           (mapcar #'car ivy-yarn-completions-commands))))
         (scripts (ivy-yarn-get-current-scripts)))
     (if (ivy-yarn-jest-installed-p)
         (append scripts (list (ivy-yarn-jest-current-file-cmd))
@@ -632,7 +632,7 @@ PLIST is additional props passed to `ivy-read'."
                                       :extra-props
                                       :caller)
                          plist))))
-            (setq current (apply 'ivy-read args))
+            (setq current (apply #'ivy-read args))
             (if marked
                 (progn (dolist (it marked)
                          (let ((cell (assoc it alist)))
@@ -643,7 +643,7 @@ PLIST is additional props passed to `ivy-read'."
                                               (funcall rest))
                                              ((listp rest)
                                               (apply
-                                               'ivy-yarn-complete-alist
+                                               #'ivy-yarn-complete-alist
                                                (list rest (append
                                                            plist
                                                            `(:prompt ,it)))))
@@ -700,9 +700,9 @@ PLIST is additional props passed to `ivy-read'."
   (unless (listp strings)
     (setq strings (split-string strings t)))
   (let* ((command (string-trim
-                   (string-join (seq-remove 'string-blank-p
+                   (string-join (seq-remove #'string-blank-p
                                             (mapcar
-                                             'string-trim strings))
+                                             #'string-trim strings))
                                 "\s"))))
     (string-trim (ivy-yarn-ensure-nvm-use
                   (if (member
