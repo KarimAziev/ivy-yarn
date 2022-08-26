@@ -6,7 +6,7 @@
 ;; URL: https://github.com/KarimAziev/ivy-yarn
 ;; Keywords: tools
 ;; Version: 0.1.1
-;; Package-Requires: ((emacs "26.1"))
+;; Package-Requires: ((emacs "28.1"))
 
 ;; This file is NOT part of GNU Emacs.
 
@@ -22,6 +22,7 @@
 ;;
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 ;;; Commentary:
 
 ;; Run yarn commands with ivy completions.
@@ -112,6 +113,7 @@ JSON-TYPE must be one of `alist', `plist', or `hash-table'."
     (error (message "Could't read %s as json."
                     file))))
 
+;;;###autoload
 (defun ivy-yarn-read-multy (prompt collection)
 	"Read COLLECTION with PROMPT and return list with selected candidates."
   (interactive)
@@ -134,6 +136,7 @@ JSON-TYPE must be one of `alist', `plist', or `hash-table'."
      (counsel--async-command (concat "npm search --parseable " str))
      '("" "working..."))))
 
+;;;###autoload
 (defun ivy-yarn-read-new-dependency (&optional initial-input)
   "Call the \"npm search\" shell command.
 INITIAL-INPUT can be given as the initial minibuffer input."
@@ -393,6 +396,7 @@ ITEM can be propertized string or plist."
     (when (listp item)
       (plist-get item property))))
 
+;;;###autoload
 (defun ivy-yarn-read-installed-package ()
 	"Read installed package."
   (interactive)
@@ -435,6 +439,7 @@ ITEM can be propertized string or plist."
             (push flag items)))
         (delq nil (reverse items))))))
 
+;;;###autoload
 (defun ivy-yarn-add-read-dependency (&optional initial-input)
   "Read dependency to install.
 INITIAL-INPUT can be given as the initial minibuffer input."
@@ -463,6 +468,7 @@ INITIAL-INPUT can be given as the initial minibuffer input."
       (setq parts result))
     (string-join (reverse parts)  "\s")))
 
+;;;###autoload
 (defun ivy-yarn-add ()
 	"Add new dependency."
   (interactive)
@@ -525,35 +531,35 @@ INITIAL-INPUT can be given as the initial minibuffer input."
     "workspace"
     "workspaces"))
 
-(defvar ivy-yarn-completions-commands
-      '(("add" . ivy-yarn-add)
-        ("global" . (("add" . ivy-yarn-add)
-                     ("remove" . ivy-yarn-get-current-dependencies)
-                     ("upgrade" . ivy-yarn-read-installed-package)))
-        ("run" . ivy-yarn-get-current-scripts)
-        ("link" . ivy-yarn-find-global-links)
-        ("unlink" . ivy-yarn-unlink)
-        ("remove" . ivy-yarn-get-current-dependencies)
-        ("upgrade" . ivy-yarn-read-installed-package)
-        ("list" . (("--depth" . ("1" "2" "3" "4" " "))
-                   ("--pattern" . ivy-yarn-get-current-dependencies)
-                   ("" . ("1" "2" "3" "4" " "))))
-        ("outdated" . ivy-yarn-get-current-dependencies)
-        ("config" . ("list"))
-        ("cache" . (("list" . '("pattern")) "dir" "clean"))
-        ("info" . ivy-yarn-get-current-dependencies)
-        ("audit" . (("--level" . ("info" "low" "moderate" "high" "critical"))
-                    ("--groups")))
-        ("config" . (("current" "list" "get" "set" "delete")))
-        ("version")
-        ("versions")
-        ("why" . ivy-yarn-get-current-dependencies)))
+(defvar ivy-yarn-completions-commands '(("add" . ivy-yarn-add)
+                                        ("global" . (("add" . ivy-yarn-add)
+                                                     ("remove" . ivy-yarn-get-current-dependencies)
+                                                     ("upgrade" . ivy-yarn-read-installed-package)))
+                                        ("run" . ivy-yarn-get-current-scripts)
+                                        ("link" . ivy-yarn-find-global-links)
+                                        ("unlink" . ivy-yarn-unlink)
+                                        ("remove" . ivy-yarn-get-current-dependencies)
+                                        ("upgrade" . ivy-yarn-read-installed-package)
+                                        ("list" . (("--depth" . ("1" "2" "3" "4" " "))
+                                                   ("--pattern" . ivy-yarn-get-current-dependencies)
+                                                   ("" . ("1" "2" "3" "4" " "))))
+                                        ("outdated" . ivy-yarn-get-current-dependencies)
+                                        ("config" . ("list"))
+                                        ("cache" . (("list" . '("pattern")) "dir" "clean"))
+                                        ("info" . ivy-yarn-get-current-dependencies)
+                                        ("audit" . (("--level" . ("info" "low" "moderate" "high" "critical"))
+                                                    ("--groups")))
+                                        ("config" . (("current" "list" "get" "set" "delete")))
+                                        ("version")
+                                        ("versions")
+                                        ("why" . ivy-yarn-get-current-dependencies)))
 
 (defun ivy-yarn-get-choices ()
 	"Return alist of commands, and scripts with handlers."
   (let ((def-commands
          (mapcar
-          (lambda (it) `(,it .
+          (lambda (it)
+            `(,it .
                         (lambda ()
                           (let ((marked-items)
                                 (val)
@@ -565,7 +571,8 @@ INITIAL-INPUT can be given as the initial minibuffer input."
                                    "\s"))))
                             (setq val
                                   (ivy-yarn-read-multy
-                                   (format "yarn %s" ,it) choices))
+                                   (format "yarn %s" ,it)
+                                   choices))
                             (if (listp val)
                                 (string-join val "\s")
                               val)))))
@@ -588,6 +595,7 @@ INITIAL-INPUT can be given as the initial minibuffer input."
           (setq result (append result (list keyword value))))))
     result))
 
+;;;###autoload
 (defun ivy-yarn-complete-alist (&optional alist &rest plist)
 	"Complete with ALIST.
 PLIST is additional props passed to `ivy-read'."
@@ -604,7 +612,9 @@ PLIST is additional props passed to `ivy-read'."
                   (not (functionp alist)))
         (when (vectorp alist)
           (setq alist
-                (seq-map-indexed (lambda (it i) (cons (format "%s" i) it))
+                (seq-map-indexed (lambda (it i)
+                                   (cons (format "%s" i)
+                                         it))
                                  (append alist nil))))
         (setq this-command 'ivy-yarn-complete-alist)
         (setq count (1+ count))
@@ -620,7 +630,8 @@ PLIST is additional props passed to `ivy-read'."
           (let* ((marked)
                  (args (append
                         (list prompt alist
-                              :action (lambda (str) str)
+                              :action (lambda (str)
+                                        str)
                               :multi-action (lambda (children)
                                               (setq marked children)))
                         (ivy-yarn-plist-pick
@@ -649,7 +660,8 @@ PLIST is additional props passed to `ivy-read'."
                                                            `(:prompt ,it)))))
                                              ((stringp rest)
                                               rest)))
-                                      (push (cons it rest) result))
+                                      (push (cons it rest)
+                                            result))
                              (push it result))))
                        (setq current nil)
                        (setq alist nil))
@@ -684,6 +696,59 @@ PLIST is additional props passed to `ivy-read'."
                      "[\n]"
                      t))))))
 
+(defun ivy-yarn-get-nvm-node-version (&optional project)
+  "Return string with version in PROJECT .nvmrc file."
+  (when-let ((nvmrc (ivy-yarn-expand-when-exists
+                     ".nvmrc" (or project
+                                  (ivy-yarn-get-project-root)))))
+    (with-temp-buffer (insert-file-contents nvmrc)
+                      (string-trim
+                       (buffer-substring-no-properties (point-min)
+                                                       (point-max))))))
+
+(defun ivy-yarn-exec-with-args (command &rest args)
+  "Run a shell COMMAND with ARGS."
+  (let ((cmdline (mapconcat (lambda (it)
+                              (if (string-match-p "\s\t\n" it)
+                                  (shell-quote-argument it)
+                                it))
+                            (append (list command)
+                                    (flatten-list args))
+                            "\s")))
+    (with-temp-buffer
+      (shell-command cmdline (current-buffer))
+      (let ((output (string-trim (buffer-substring-no-properties (point-min)
+                                                                 (point-max)))))
+        (unless (string-empty-p output)
+          output)))))
+
+(defun ivy-yarn-nvm-command (command &rest args)
+  "Run nvm COMMAND with ARGS if nvm directory exists."
+  (when-let ((nvm-path (ivy-yarn-nvm-path)))
+    (ivy-yarn-exec-with-args "source" nvm-path
+                             "&&" "nvm" command args)))
+
+(defun ivy-yarn-nvm-installed-node-versions ()
+  "Return list of installed with nvm node versions."
+  (let ((versions (split-string (or (ivy-yarn-nvm-command "ls") "")
+                                "[\r\f\n]" t)))
+    versions))
+
+(defun ivy-yarn-ensure-nvm-node-installed (&optional project force)
+  "Install node version specified in nvmrc file of PROJECT.
+If FORCE is non nil, install it even if it is installed."
+  (when-let ((nvm-node-version (ivy-yarn-get-nvm-node-version project)))
+    (let ((regex (regexp-quote nvm-node-version))
+          (versions (ivy-yarn-nvm-installed-node-versions)))
+      (when (and
+             (or force
+                 (not (seq-find (apply-partially #'string-match-p regex)
+                                versions)))
+             (yes-or-no-p (format
+                           "This project requires node %s, which is not installed. Install? "
+                           nvm-node-version)))
+        (ivy-yarn-nvm-command "install" nvm-node-version "--reinstall-packages-from=current")))))
+
 (defun ivy-yarn-ensure-nvm-use (command &optional project)
   "If PROJECT can use nvm, prepend to COMMAND nvm use."
   (if-let ((nvm-path (and
@@ -692,7 +757,8 @@ PLIST is additional props passed to `ivy-read'."
                        ".nvmrc" (or project
                                     (ivy-yarn-get-project-root)))
                       (ivy-yarn-nvm-path))))
-      (concat "source " nvm-path " && nvm use && " command)
+      (progn (ivy-yarn-ensure-nvm-node-installed project)
+             (concat "source " nvm-path " && nvm use && " command))
     command))
 
 (defun ivy-yarn-normalize-result (strings)
@@ -754,6 +820,7 @@ PLIST is additional props passed to `ivy-read'."
         (default-directory project))
     (async-shell-command command buffer buffer)))
 
+;;;###autoload
 (defun ivy-yarn ()
 	"Read and execute yarn command or project script.
 
@@ -798,13 +865,16 @@ run command in `vterm', otherwise with `async-shell-command'."
           item))))
 
 (ivy-configure 'ivy-yarn-complete-alist
-  :display-transformer-fn 'ivy-yarn-complete-display-fn)
+  :display-transformer-fn
+  'ivy-yarn-complete-display-fn)
 
 (ivy-configure 'ivy-yarn-read-multy
-  :display-transformer-fn 'ivy-yarn-complete-display-fn)
+  :display-transformer-fn
+  'ivy-yarn-complete-display-fn)
 
 (ivy-configure 'ivy-yarn-read-installed-package
-  :display-transformer-fn 'ivy-yarn-complete-display-fn)
+  :display-transformer-fn
+  'ivy-yarn-complete-display-fn)
 
 (provide 'ivy-yarn)
 ;;; ivy-yarn.el ends here

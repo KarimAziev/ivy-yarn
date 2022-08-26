@@ -6,7 +6,7 @@ Execute yarn commands with ivy completions.
 
 ** Requirements
 
-- Emacs (>= 26.1)
+- Emacs (>= 28.1)
 - [[https://github.com/abo-abo/swiper][ivy]]
 - json
 - [[https://github.com/akermu/emacs-libvterm][vterm]] (optionally)
