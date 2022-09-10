@@ -226,11 +226,12 @@ Only those packages includes that listed in package.json."
     links))
 
 (defun ivy-yarn-find-global-links ()
-  "Return list of linked packages in `ivy-yarn-global-config-directory' directory."
-  (when-let ((links-dir (when ivy-yarn-global-config-directory
-                          (ivy-yarn-expand-when-exists
-                           "link"
-                           ivy-yarn-global-config-directory))))
+  "Return linked packages in `ivy-yarn-global-config-directory' directory."
+  (when-let ((links-dir
+              (when ivy-yarn-global-config-directory
+                (ivy-yarn-expand-when-exists
+                 "link"
+                 ivy-yarn-global-config-directory))))
     (ivy-yarn-links-in-dir links-dir)))
 
 (defun ivy-yarn-get-node-modules-path ()
@@ -531,28 +532,29 @@ INITIAL-INPUT can be given as the initial minibuffer input."
     "workspace"
     "workspaces"))
 
-(defvar ivy-yarn-completions-commands '(("add" . ivy-yarn-add)
-                                        ("global" . (("add" . ivy-yarn-add)
-                                                     ("remove" . ivy-yarn-get-current-dependencies)
-                                                     ("upgrade" . ivy-yarn-read-installed-package)))
-                                        ("run" . ivy-yarn-get-current-scripts)
-                                        ("link" . ivy-yarn-find-global-links)
-                                        ("unlink" . ivy-yarn-unlink)
-                                        ("remove" . ivy-yarn-get-current-dependencies)
-                                        ("upgrade" . ivy-yarn-read-installed-package)
-                                        ("list" . (("--depth" . ("1" "2" "3" "4" " "))
-                                                   ("--pattern" . ivy-yarn-get-current-dependencies)
-                                                   ("" . ("1" "2" "3" "4" " "))))
-                                        ("outdated" . ivy-yarn-get-current-dependencies)
-                                        ("config" . ("list"))
-                                        ("cache" . (("list" . '("pattern")) "dir" "clean"))
-                                        ("info" . ivy-yarn-get-current-dependencies)
-                                        ("audit" . (("--level" . ("info" "low" "moderate" "high" "critical"))
-                                                    ("--groups")))
-                                        ("config" . (("current" "list" "get" "set" "delete")))
-                                        ("version")
-                                        ("versions")
-                                        ("why" . ivy-yarn-get-current-dependencies)))
+(defvar ivy-yarn-completions-commands
+  '(("add" . ivy-yarn-add)
+    ("global" . (("add" . ivy-yarn-add)
+                 ("remove" . ivy-yarn-get-current-dependencies)
+                 ("upgrade" . ivy-yarn-read-installed-package)))
+    ("run" . ivy-yarn-get-current-scripts)
+    ("link" . ivy-yarn-find-global-links)
+    ("unlink" . ivy-yarn-unlink)
+    ("remove" . ivy-yarn-get-current-dependencies)
+    ("upgrade" . ivy-yarn-read-installed-package)
+    ("list" . (("--depth" . ("1" "2" "3" "4" " "))
+               ("--pattern" . ivy-yarn-get-current-dependencies)
+               ("" . ("1" "2" "3" "4" " "))))
+    ("outdated" . ivy-yarn-get-current-dependencies)
+    ("config" . ("list"))
+    ("cache" . (("list" . '("pattern")) "dir" "clean"))
+    ("info" . ivy-yarn-get-current-dependencies)
+    ("audit" . (("--level" . ("info" "low" "moderate" "high" "critical"))
+                ("--groups")))
+    ("config" . (("current" "list" "get" "set" "delete")))
+    ("version")
+    ("versions")
+    ("why" . ivy-yarn-get-current-dependencies)))
 
 (defun ivy-yarn-get-choices ()
 	"Return alist of commands, and scripts with handlers."
@@ -744,10 +746,13 @@ If FORCE is non nil, install it even if it is installed."
              (or force
                  (not (seq-find (apply-partially #'string-match-p regex)
                                 versions)))
-             (yes-or-no-p (format
-                           "This project requires node %s, which is not installed. Install? "
-                           nvm-node-version)))
-        (ivy-yarn-nvm-command "install" nvm-node-version "--reinstall-packages-from=current")))))
+             (yes-or-no-p
+              (format
+               "This project requires node %s, which is not installed. Install?"
+               nvm-node-version)))
+        (ivy-yarn-nvm-command "install"
+                              nvm-node-version
+                              "--reinstall-packages-from=current")))))
 
 (defun ivy-yarn-ensure-nvm-use (command &optional project)
   "If PROJECT can use nvm, prepend to COMMAND nvm use."
@@ -762,13 +767,13 @@ If FORCE is non nil, install it even if it is installed."
     command))
 
 (defun ivy-yarn-normalize-result (strings)
-	"Normalize STRINGS by trimming and prepending prefix to them."
+  "Normalize STRINGS by trimming and prepending prefix to them."
   (unless (listp strings)
     (setq strings (split-string strings t)))
   (let* ((command (string-trim
                    (string-join (seq-remove #'string-blank-p
                                             (mapcar
-                                             #'string-trim strings))
+                                             #'string-trim (delq nil strings)))
                                 "\s"))))
     (string-trim (ivy-yarn-ensure-nvm-use
                   (if (member
