@@ -819,10 +819,12 @@ If FORCE is non nil, install it even if it is installed."
       (run-at-time 1 nil 'vterm-send-return))))
 
 (defun ivy-yarn-run-async-shell-command (project command)
-	"Run COMMAND in PROJECT with `async-shell-command'."
+  "Run COMMAND in PROJECT with `async-shell-command'."
   (let ((buffer (format "*%s*" (concat "ivy-yarn-"
                                        (abbreviate-file-name project))))
         (default-directory project))
+    (when (buffer-live-p (get-buffer buffer))
+      (kill-buffer buffer))
     (async-shell-command command buffer buffer)))
 
 ;;;###autoload
