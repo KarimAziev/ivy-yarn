@@ -115,7 +115,7 @@ JSON-TYPE must be one of `alist', `plist', or `hash-table'."
 
 ;;;###autoload
 (defun ivy-yarn-read-multy (prompt collection)
-	"Read COLLECTION with PROMPT and return list with selected candidates."
+  "Read COLLECTION with PROMPT and return list with selected candidates."
   (interactive)
   (let ((marked)
         (item))
@@ -123,7 +123,8 @@ JSON-TYPE must be one of `alist', `plist', or `hash-table'."
                          collection
                          :caller 'ivy-yarn-read-multy
                          :action (lambda (it) it)
-                         :multi-action (lambda (cands) (setq marked cands))))
+                         :multi-action (lambda (cands)
+                                         (setq marked cands))))
     (or marked (list item))))
 
 (defvar ivy-yarn-history-dependencies nil)
@@ -162,7 +163,7 @@ INITIAL-INPUT can be given as the initial minibuffer input."
       (car (split-string result nil t)))))
 
 (defun ivy-yarn-get-package-versions (package)
-	"Exec \"yarn info\" for PACKAGE and return list of available versions."
+  "Exec \"yarn info\" for PACKAGE and return list of available versions."
   (let ((str (string-trim
               (shell-command-to-string (string-join
                                         `("yarn info" ,package)
@@ -207,7 +208,7 @@ INITIAL-INPUT can be given as the initial minibuffer input."
     result))
 
 (defun ivy-yarn-links-in-dir (directory)
-	"Return non-absolute symlinked packages in DIRECTORY."
+  "Return non-absolute symlinked packages in DIRECTORY."
   (let ((len (1+ (length directory))))
     (mapcar (lambda (it)
               (substring it len))
@@ -235,7 +236,7 @@ Only those packages includes that listed in package.json."
     (ivy-yarn-links-in-dir links-dir)))
 
 (defun ivy-yarn-get-node-modules-path ()
-	"Look up directory hierarchy for directory containing node_modules.
+  "Look up directory hierarchy for directory containing node_modules.
 Return absolute path to node_modules or nil."
   (when-let ((project-root (locate-dominating-file
                             default-directory
@@ -243,14 +244,14 @@ Return absolute path to node_modules or nil."
     (expand-file-name "node_modules" project-root)))
 
 (defun ivy-yarn-get-project-root ()
-	"Look up directory hierarchy for directory containing package.json.
+  "Look up directory hierarchy for directory containing package.json.
 Return full path of containing directory or nil."
   (locate-dominating-file
    default-directory
    "package.json"))
 
 (defun ivy-yarn-unlink ()
-	"Unlink and reinstall linked package in current project."
+  "Unlink and reinstall linked package in current project."
   (let ((current-project-name (ivy-yarn-read-from-package-json 'name))
         (global-links (ivy-yarn-find-global-links))
         (linked-packages (ivy-yarn-project-linked-dependencies))
@@ -265,14 +266,14 @@ Return full path of containing directory or nil."
       (_ " && yarn install --force"))))
 
 (defun ivy-yarn-get-package-json-path ()
-	"Look up directory hierarchy for directory containing package.json.
+  "Look up directory hierarchy for directory containing package.json.
 Return absolute path to package.json or nil."
   (when-let ((project-root (ivy-yarn-get-project-root)))
     (expand-file-name "package.json"
                       project-root)))
 
 (defun ivy-yarn-read-from-package-json (key)
-	"Return value of KEY from package.json."
+  "Return value of KEY from package.json."
   (let* ((package-json-path (ivy-yarn-get-package-json-path))
          (package-json (ivy-yarn-read-json package-json-path 'alist)))
     (alist-get key package-json)))
@@ -304,7 +305,7 @@ Return absolute path to package.json or nil."
        :description "Run jest on current file"))))
 
 (defun ivy-yarn-get-current-scripts ()
-	"Get current project scripts from package.json.
+  "Get current project scripts from package.json.
 Return list of strings, propertized with :description."
   (let* ((package-json-path (ivy-yarn-get-package-json-path))
          (package-json (ivy-yarn-read-json package-json-path 'alist))
@@ -344,7 +345,7 @@ X can be any object."
     (apply #'propertize string (cdr result))))
 
 (defun ivy-yarn-get-current-dependencies ()
-	"Get current project dependencies from package.json.
+  "Get current project dependencies from package.json.
 Return list of strings. Each of string propertized with props
 :type (dependencies, devDependencies, optionalDependencies
  or peerDependencies), :version - package version,and
@@ -369,7 +370,7 @@ Return list of strings. Each of string propertized with props
     all-items))
 
 (defun ivy-yarn-confirm-package-version (package &optional prompt)
-	"Confirm PACKAGE version with PROMPT."
+  "Confirm PACKAGE version with PROMPT."
   (let ((version))
     (unless (string-match-p "[a-z-]+@" package)
       (when-let ((versions (seq-reduce
@@ -399,7 +400,7 @@ ITEM can be propertized string or plist."
 
 ;;;###autoload
 (defun ivy-yarn-read-installed-package ()
-	"Read installed package."
+  "Read installed package."
   (interactive)
   (let* ((marked)
          (item (ivy-read "search: " (ivy-yarn-get-current-dependencies)
@@ -417,7 +418,7 @@ ITEM can be propertized string or plist."
     (mapconcat #'string-trim results "\s")))
 
 (defun ivy-yarn-parse-command-args (command)
-	"Parse shell COMMAND args."
+  "Parse shell COMMAND args."
   (setq command (if (> (length (split-string command nil t)) 1)
                     command
                   (concat command " --help")))
@@ -471,7 +472,7 @@ INITIAL-INPUT can be given as the initial minibuffer input."
 
 ;;;###autoload
 (defun ivy-yarn-add ()
-	"Add new dependency."
+  "Add new dependency."
   (interactive)
   (let* ((dependency (ivy-yarn-add-read-dependency))
          (flags (string-join
@@ -557,7 +558,7 @@ INITIAL-INPUT can be given as the initial minibuffer input."
     ("why" . ivy-yarn-get-current-dependencies)))
 
 (defun ivy-yarn-get-choices ()
-	"Return alist of commands, and scripts with handlers."
+  "Return alist of commands, and scripts with handlers."
   (let ((def-commands
          (mapcar
           (lambda (it)
@@ -588,7 +589,7 @@ INITIAL-INPUT can be given as the initial minibuffer input."
       (append scripts ivy-yarn-completions-commands def-commands))))
 
 (defun ivy-yarn-plist-pick (keywords pl)
-	"Pick KEYWORDS from PL."
+  "Pick KEYWORDS from PL."
   (let ((result)
         (keyword))
     (while (setq keyword (pop keywords))
@@ -599,7 +600,7 @@ INITIAL-INPUT can be given as the initial minibuffer input."
 
 ;;;###autoload
 (defun ivy-yarn-complete-alist (&optional alist &rest plist)
-	"Complete with ALIST.
+  "Complete with ALIST.
 PLIST is additional props passed to `ivy-read'."
   (interactive)
   (let ((current)
@@ -783,13 +784,13 @@ If FORCE is non nil, install it even if it is installed."
                     (concat "yarn && yarn " command))))))
 
 (defun ivy-yarn-expand-when-exists (filename &optional directory)
-	"Expand FILENAME to DIRECTORY and return result if exists."
+  "Expand FILENAME to DIRECTORY and return result if exists."
   (when-let ((file (expand-file-name filename directory)))
     (when (file-exists-p file)
       file)))
 
 (defun ivy-yarn-nvm-path ()
-	"Return path to NVM_DIR if exists."
+  "Return path to NVM_DIR if exists."
   (when-let* ((nvm-dir (or (getenv "NVM_DIR")
                            (when (file-exists-p "~/.nvm/")
                              "~/.nvm/")))
@@ -798,11 +799,11 @@ If FORCE is non nil, install it even if it is installed."
       file)))
 
 (defun ivy-yarn-nvm-installed-p ()
-	"Return t if NVM_DIR exists."
+  "Return t if NVM_DIR exists."
   (not (null (ivy-yarn-nvm-path))))
 
 (defun ivy-yarn-run-in-vterm (project command)
-	"Run COMMAND in PROJECT in vterm."
+  "Run COMMAND in PROJECT in vterm."
   (let ((buffer (format "*%s*" (concat "vterm-ivy-yarn-"
                                        (replace-regexp-in-string
                                         "~/"
@@ -829,7 +830,7 @@ If FORCE is non nil, install it even if it is installed."
 
 ;;;###autoload
 (defun ivy-yarn ()
-	"Read and execute yarn command or project script.
+  "Read and execute yarn command or project script.
 
 If project directory contains .nvmrc file,
 `ivy-yarn-use-nvm' is non-nil and nvm installed,
@@ -849,7 +850,7 @@ run command in `vterm', otherwise with `async-shell-command'."
       (ivy-yarn-run-async-shell-command project command))))
 
 (defun ivy-yarn-complete-display-fn (item)
-	"Transform ITEM for displaying while `ivy-read'."
+  "Transform ITEM for displaying while `ivy-read'."
   (if-let ((version (ivy-yarn-get-prop item :version)))
       (concat item "@"
               (propertize
