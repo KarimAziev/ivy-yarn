@@ -197,12 +197,12 @@ INITIAL-INPUT can be given as the initial minibuffer input."
         (tramp-mode (and tramp-mode (file-remote-p
                                      (expand-file-name directory)))))
     (dolist (file (delete ".." (delete "." (directory-files directory))))
-      (when-let ((full-file (unless (member file '(".git" ".github"))
+      (when-let* ((full-file (unless (member file '(".git" ".github"))
                               (concat directory file))))
         (when (file-directory-p full-file)
           (if (file-symlink-p full-file)
               (push full-file result)
-            (when-let ((dirs (ivy-yarn-list-symlinked-dirs-recursively
+            (when-let* ((dirs (ivy-yarn-list-symlinked-dirs-recursively
                               full-file)))
               (setq result (nconc result dirs)))))))
     result))
@@ -221,14 +221,14 @@ Only those packages includes that listed in package.json."
         (dependencies (ivy-yarn-get-current-dependencies))
         (links))
     (dolist (package-name dependencies)
-      (when-let ((dir (ivy-yarn-expand-when-exists package-name node-modules)))
+      (when-let* ((dir (ivy-yarn-expand-when-exists package-name node-modules)))
         (when (file-symlink-p dir)
           (push package-name links))))
     links))
 
 (defun ivy-yarn-find-global-links ()
   "Return linked packages in `ivy-yarn-global-config-directory' directory."
-  (when-let ((links-dir
+  (when-let* ((links-dir
               (when ivy-yarn-global-config-directory
                 (ivy-yarn-expand-when-exists
                  "link"
@@ -238,7 +238,7 @@ Only those packages includes that listed in package.json."
 (defun ivy-yarn-get-node-modules-path ()
   "Look up directory hierarchy for directory containing node_modules.
 Return absolute path to node_modules or nil."
-  (when-let ((project-root (locate-dominating-file
+  (when-let* ((project-root (locate-dominating-file
                             default-directory
                             "node_modules")))
     (expand-file-name "node_modules" project-root)))
@@ -268,7 +268,7 @@ Return full path of containing directory or nil."
 (defun ivy-yarn-get-package-json-path ()
   "Look up directory hierarchy for directory containing package.json.
 Return absolute path to package.json or nil."
-  (when-let ((project-root (ivy-yarn-get-project-root)))
+  (when-let* ((project-root (ivy-yarn-get-project-root)))
     (expand-file-name "package.json"
                       project-root)))
 
@@ -289,7 +289,7 @@ Return absolute path to package.json or nil."
 
 (defun ivy-yarn-jest-current-file-cmd ()
   "Return string with jest command for testing current file."
-  (when-let ((file (or buffer-file-name default-directory))
+  (when-let* ((file (or buffer-file-name default-directory))
              (project-root (ivy-yarn-get-project-root)))
     (let ((path-pattern (shell-quote-argument
                          (replace-regexp-in-string
@@ -373,7 +373,7 @@ Return list of strings. Each of string propertized with props
   "Confirm PACKAGE version with PROMPT."
   (let ((version))
     (unless (string-match-p "[a-z-]+@" package)
-      (when-let ((versions (seq-reduce
+      (when-let* ((versions (seq-reduce
                             (lambda (acc it)
                               (let ((prefixes '("^" ">="))
                                     (l `(,it)))
@@ -422,7 +422,7 @@ ITEM can be propertized string or plist."
   (setq command (if (> (length (split-string command nil t)) 1)
                     command
                   (concat command " --help")))
-  (when-let ((help-string command))
+  (when-let* ((help-string command))
     (with-temp-buffer
       (erase-buffer)
       (insert help-string)
@@ -593,7 +593,7 @@ INITIAL-INPUT can be given as the initial minibuffer input."
   (let ((result)
         (keyword))
     (while (setq keyword (pop keywords))
-      (when-let ((value (plist-get pl keyword)))
+      (when-let* ((value (plist-get pl keyword)))
         (unless (null value)
           (setq result (append result (list keyword value))))))
     result))
@@ -650,7 +650,7 @@ PLIST is additional props passed to `ivy-read'."
             (if marked
                 (progn (dolist (it marked)
                          (let ((cell (assoc it alist)))
-                           (if-let ((rest (cdr cell)))
+                           (if-let* ((rest (cdr cell)))
                                (progn (setq rest
                                             (cond
                                              ((functionp rest)
@@ -683,7 +683,7 @@ PLIST is additional props passed to `ivy-read'."
 
 (defun ivy-yarn-nvm-node-path (&optional project)
   "If PROJECT can use nvm, prepend to COMMAND nvm use."
-  (when-let ((source (and (ivy-yarn-expand-when-exists
+  (when-let* ((source (and (ivy-yarn-expand-when-exists
                            ".nvmrc"
                            (or project
                                (ivy-yarn-get-project-root)))
@@ -701,7 +701,7 @@ PLIST is additional props passed to `ivy-read'."
 
 (defun ivy-yarn-get-nvm-node-version (&optional project)
   "Return string with version in PROJECT .nvmrc file."
-  (when-let ((nvmrc (ivy-yarn-expand-when-exists
+  (when-let* ((nvmrc (ivy-yarn-expand-when-exists
                      ".nvmrc" (or project
                                   (ivy-yarn-get-project-root)))))
     (with-temp-buffer (insert-file-contents nvmrc)
@@ -727,7 +727,7 @@ PLIST is additional props passed to `ivy-read'."
 
 (defun ivy-yarn-nvm-command (command &rest args)
   "Run nvm COMMAND with ARGS if nvm directory exists."
-  (when-let ((nvm-path (ivy-yarn-nvm-path)))
+  (when-let* ((nvm-path (ivy-yarn-nvm-path)))
     (ivy-yarn-exec-with-args "source" nvm-path
                              "&&" "nvm" command args)))
 
@@ -740,7 +740,7 @@ PLIST is additional props passed to `ivy-read'."
 (defun ivy-yarn-ensure-nvm-node-installed (&optional project force)
   "Install node version specified in nvmrc file of PROJECT.
 If FORCE is non nil, install it even if it is installed."
-  (when-let ((nvm-node-version (ivy-yarn-get-nvm-node-version project)))
+  (when-let* ((nvm-node-version (ivy-yarn-get-nvm-node-version project)))
     (let ((regex (regexp-quote nvm-node-version))
           (versions (ivy-yarn-nvm-installed-node-versions)))
       (when (and
@@ -757,7 +757,7 @@ If FORCE is non nil, install it even if it is installed."
 
 (defun ivy-yarn-ensure-nvm-use (command &optional project)
   "If PROJECT can use nvm, prepend to COMMAND nvm use."
-  (if-let ((nvm-path (and
+  (if-let* ((nvm-path (and
                       ivy-yarn-use-nvm
                       (ivy-yarn-expand-when-exists
                        ".nvmrc" (or project
@@ -785,7 +785,7 @@ If FORCE is non nil, install it even if it is installed."
 
 (defun ivy-yarn-expand-when-exists (filename &optional directory)
   "Expand FILENAME to DIRECTORY and return result if exists."
-  (when-let ((file (expand-file-name filename directory)))
+  (when-let* ((file (expand-file-name filename directory)))
     (when (file-exists-p file)
       file)))
 
@@ -851,7 +851,7 @@ run command in `vterm', otherwise with `async-shell-command'."
 
 (defun ivy-yarn-complete-display-fn (item)
   "Transform ITEM for displaying while `ivy-read'."
-  (if-let ((version (ivy-yarn-get-prop item :version)))
+  (if-let* ((version (ivy-yarn-get-prop item :version)))
       (concat item "@"
               (propertize
                (or (string-join
